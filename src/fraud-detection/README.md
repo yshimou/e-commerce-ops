@@ -17,5 +17,5 @@ cp -r ../../pb/ src/main/proto/
 To build using Docker run from the repo root:
 
 ```sh
-docker build -f ./src/fraud-detection/Dockerfile .
+docker build --build-arg OTEL_JAVA_AGENT_VERSION=2.32.0 -f src/fraud-detection/Dockerfile .
 ```
