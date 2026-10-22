@@ -11,3 +11,11 @@ You can access the web interface to Locust at `http://localhost:8080/loadgen/`.
 Please see the [Locust
 documentation](https://docs.locust.io/en/2.16.0/writing-a-locustfile.html) to
 learn more about modifying the locustfile.
+
+## Docker Build
+
+To build using Docker run from this folder :
+
+```sh
+docker build .
+```
