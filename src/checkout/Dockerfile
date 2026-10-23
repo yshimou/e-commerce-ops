@@ -1,7 +1,7 @@
 FROM golang:1.22-alpine AS builder
 
 WORKDIR /src/checkout
-COPY . .
+COPY ./src/checkout .
 RUN go mod download
 RUN go build -ldflags "-s -w" -o checkout-exec/ 
 

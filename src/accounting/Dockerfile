@@ -3,9 +3,8 @@ ARG TARGETARCH
 ARG BUILD_CONFIGURATION=Release
 
 WORKDIR /src/accounting
-#As we need to copy the proto file from the parent directory, makes sure the repository root is the build context 
 COPY /pb/demo.proto ./proto/demo.proto
-COPY /src/accounting .
+COPY ./src/accounting .
 
 
 RUN dotnet restore "./Accounting.csproj" -r linux-$TARGETARCH

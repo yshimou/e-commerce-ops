@@ -1,7 +1,7 @@
 FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /src/ad
 
-COPY . .
+COPY ./src/ad .
 RUN ls -la
 RUN ./gradlew downloadRepos && ./gradlew installDist -PprotoSourceDir=./pb
 

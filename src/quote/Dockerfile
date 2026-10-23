@@ -1,7 +1,7 @@
 FROM composer:2.7 AS vendor
 
 WORKDIR /tmp/
-COPY ./composer.json .
+COPY ./src/quote/composer.json .
 
 RUN composer install \
     --ignore-platform-reqs \
@@ -20,7 +20,7 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/do
 RUN chmod +x /usr/local/bin/install-php-extensions && install-php-extensions opcache pcntl protobuf opentelemetry
 
 COPY --from=vendor /tmp/vendor/ ./vendor/
-COPY . .
+COPY ./src/quote .
 
 USER www-data
 EXPOSE ${QUOTE_PORT}
