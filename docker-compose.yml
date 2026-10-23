@@ -1,21 +1,11 @@
-
 # Compose extension fields (x-*) hold reusable YAML mappings, not services.
 # & defines an anchor, * references it, and << merges its mapping into a service.
 x-default-logging: &logging
   driver: "json-file"
   options:
-    # Rotate container logs to bound disk usage.
     max-size: "5m"
     max-file: "2"
     tag: "{{.Name}}"
-
-# Build context is relative to this Compose file and is shared by app builds.
-x-build-defaults: &build-defaults
-  context: ./
-
-# Restart automatically unless a container was explicitly stopped.
-x-restart-defaults: &restart-defaults
-  restart: unless-stopped
 
 # Services join this default network automatically unless they override it.
 networks:
@@ -25,16 +15,18 @@ networks:
     # Bridge lets containers communicate on this host; services resolve by name.
     driver: bridge
 
-  # Compose interpolates ${VAR} from the shell or the project .env file (shell wins).
-  # To pass values into a container, declare them in that service's environment or env_file.
 services:
+  # ******************
+  # Core Demo Services
+  # ******************
   # Accounting service
   accounting:
+    # Compose interpolates ${VAR} from the shell or the project .env file (shell wins).
+    # To pass values into a container, declare them in that service's environment or .env file.
     image: ${IMAGE_NAME}:${DEMO_VERSION}-accounting
     container_name: accounting
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${ACCOUNTING_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-accounting
@@ -42,6 +34,7 @@ services:
       resources:
         limits:
           memory: 120M
+    restart: unless-stopped
     environment:
       - KAFKA_ADDR
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_HTTP}
@@ -61,9 +54,8 @@ services:
   ad:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-ad
     container_name: ad
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${AD_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-ad
@@ -73,6 +65,7 @@ services:
       resources:
         limits:
           memory: 300M
+    restart: unless-stopped
     ports:
       - "${AD_PORT}"
     environment:
@@ -84,6 +77,7 @@ services:
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_LOGS_EXPORTER=otlp
       - OTEL_SERVICE_NAME=ad
+      # Workaround on OSX for https://bugs.openjdk.org/browse/JDK-8345296
       - _JAVA_OPTIONS
     depends_on:
       otel-collector:
@@ -96,9 +90,8 @@ services:
   cart:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-cart
     container_name: cart
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${CART_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-cart
@@ -106,6 +99,7 @@ services:
       resources:
         limits:
           memory: 160M
+    restart: unless-stopped
     ports:
       - "${CART_PORT}"
     environment:
@@ -131,9 +125,8 @@ services:
   checkout:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-checkout
     container_name: checkout
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${CHECKOUT_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-checkout
@@ -141,6 +134,7 @@ services:
       resources:
         limits:
           memory: 20M
+    restart: unless-stopped
     ports:
       - "${CHECKOUT_PORT}"
     environment:
@@ -184,9 +178,8 @@ services:
   currency:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-currency
     container_name: currency
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${CURRENCY_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-currency
@@ -196,6 +189,7 @@ services:
       resources:
         limits:
           memory: 20M
+    restart: unless-stopped
     ports:
       - "${CURRENCY_PORT}"
     environment:
@@ -215,9 +209,8 @@ services:
   email:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-email
     container_name: email
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${EMAIL_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-email
@@ -225,6 +218,7 @@ services:
       resources:
         limits:
           memory: 100M
+    restart: unless-stopped
     ports:
       - "${EMAIL_PORT}"
     environment:
@@ -245,9 +239,8 @@ services:
   fraud-detection:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-fraud-detection
     container_name: fraud-detection
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${FRAUD_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-fraud-detection
@@ -257,6 +250,7 @@ services:
       resources:
         limits:
           memory: 300M
+    restart: unless-stopped
     environment:
       - FLAGD_HOST
       - FLAGD_PORT
@@ -278,9 +272,8 @@ services:
   frontend:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend
     container_name: frontend
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${FRONTEND_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-frontend
@@ -288,6 +281,7 @@ services:
       resources:
         limits:
           memory: 250M
+    restart: unless-stopped
     ports:
       - "${FRONTEND_PORT}"
     environment:
@@ -339,9 +333,8 @@ services:
   frontend-proxy:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-frontend-proxy
     container_name: frontend-proxy
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${FRONTEND_PROXY_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-frontend-proxy
@@ -349,6 +342,7 @@ services:
       resources:
         limits:
           memory: 65M
+    restart: unless-stopped
     ports:
       - "${ENVOY_PORT}:${ENVOY_PORT}"
       - "${ENVOY_ADMIN_PORT}:${ENVOY_ADMIN_PORT}"
@@ -392,9 +386,8 @@ services:
   image-provider:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-image-provider
     container_name: image-provider
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${IMAGE_PROVIDER_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-image-provider
@@ -402,6 +395,7 @@ services:
       resources:
         limits:
           memory: 120M
+    restart: unless-stopped
     ports:
       - "${IMAGE_PROVIDER_PORT}"
     environment:
@@ -419,9 +413,8 @@ services:
   load-generator:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-load-generator
     container_name: load-generator
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${LOAD_GENERATOR_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-load-generator
@@ -429,6 +422,7 @@ services:
       resources:
         limits:
           memory: 1500M
+    restart: unless-stopped
     ports:
       - "${LOCUST_WEB_PORT}"
     environment:
@@ -458,9 +452,8 @@ services:
   payment:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-payment
     container_name: payment
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${PAYMENT_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-payment
@@ -468,6 +461,7 @@ services:
       resources:
         limits:
           memory: 120M
+    restart: unless-stopped
     ports:
       - "${PAYMENT_PORT}"
     environment:
@@ -490,9 +484,8 @@ services:
   product-catalog:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-product-catalog
     container_name: product-catalog
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${PRODUCT_CATALOG_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-product-catalog
@@ -500,6 +493,7 @@ services:
       resources:
         limits:
           memory: 20M
+    restart: unless-stopped
     ports:
       - "${PRODUCT_CATALOG_PORT}"
     environment:
@@ -525,9 +519,8 @@ services:
   quote:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-quote
     container_name: quote
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${QUOTE_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-quote
@@ -535,6 +528,7 @@ services:
       resources:
         limits:
           memory: 40M
+    restart: unless-stopped
     ports:
       - "${QUOTE_PORT}"
     environment:
@@ -555,16 +549,16 @@ services:
   recommendation:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-recommendation
     container_name: recommendation
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${RECOMMENDATION_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-recommendation
     deploy:
       resources:
         limits:
-          memory: 500M               
+          memory: 500M               # This is high to enable supporting the recommendationCache feature flag use case
+    restart: unless-stopped
     ports:
       - "${RECOMMENDATION_PORT}"
     environment:
@@ -591,9 +585,8 @@ services:
   shipping:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-shipping
     container_name: shipping
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${SHIPPING_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-shipping
@@ -601,6 +594,7 @@ services:
       resources:
         limits:
           memory: 20M
+    restart: unless-stopped
     ports:
       - "${SHIPPING_PORT}"
     environment:
@@ -623,11 +617,11 @@ services:
   flagd:
     image: ${FLAGD_IMAGE}
     container_name: flagd
-    <<: *restart-defaults
     deploy:
       resources:
         limits:
           memory: 75M
+    restart: unless-stopped
     environment:
       - FLAGD_OTEL_COLLECTOR_URI=${OTEL_COLLECTOR_HOST}:${OTEL_COLLECTOR_PORT_GRPC}
       - FLAGD_METRICS_EXPORTER=otel
@@ -652,7 +646,7 @@ services:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-flagd-ui
     container_name: flagd-ui
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${FLAGD_UI_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-flagd-ui
@@ -683,9 +677,8 @@ services:
   kafka:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-kafka
     container_name: kafka
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${KAFKA_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-kafka
@@ -695,6 +688,7 @@ services:
       resources:
         limits:
           memory: 620M
+    restart: unless-stopped
     environment:
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${KAFKA_HOST}:9092
       - KAFKA_LISTENERS=PLAINTEXT://${KAFKA_HOST}:9092,CONTROLLER://${KAFKA_HOST}:9093
@@ -718,9 +712,8 @@ services:
   postgresql:
     image: ${IMAGE_NAME}:${DEMO_VERSION}-postgresql
     container_name: postgresql
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${POSTGRES_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-postgresql
@@ -728,6 +721,7 @@ services:
       resources:
         limits:
           memory: 80M
+    restart: unless-stopped
     ports:
       - ${POSTGRES_PORT}
     environment:
@@ -740,12 +734,12 @@ services:
   valkey-cart:
     image: ${VALKEY_IMAGE}
     container_name: valkey-cart
-    <<: *restart-defaults
     user: valkey
     deploy:
       resources:
         limits:
           memory: 20M
+    restart: unless-stopped
     ports:
       - "${VALKEY_PORT}"
     logging: *logging
@@ -758,13 +752,13 @@ services:
   jaeger:
     image: ${JAEGERTRACING_IMAGE}
     container_name: jaeger
-    <<: *restart-defaults
     command:
       - "--config=file:/etc/jaeger/config.yml"
     deploy:
       resources:
         limits:
           memory: 1200M
+    restart: unless-stopped
     ports:
       - "${JAEGER_UI_PORT}"
       - "${JAEGER_GRPC_PORT}"
@@ -783,11 +777,11 @@ services:
   grafana:
     image: ${GRAFANA_IMAGE}
     container_name: grafana
-    <<: *restart-defaults
     deploy:
       resources:
         limits:
           memory: 120M
+    restart: unless-stopped
     environment:
       - "GF_INSTALL_PLUGINS=grafana-opensearch-datasource"
     volumes:
@@ -801,11 +795,11 @@ services:
   otel-collector:
     image: ${COLLECTOR_CONTRIB_IMAGE}
     container_name: otel-collector
-    <<: *restart-defaults
     deploy:
       resources:
         limits:
           memory: 200M
+    restart: unless-stopped
     command: [ "--config=/etc/otelcol-config.yml", "--config=/etc/otelcol-config-extras.yml" ]
     user: 0:0
     volumes:
@@ -839,7 +833,6 @@ services:
   prometheus:
     image: ${PROMETHEUS_IMAGE}
     container_name: prometheus
-    <<: *restart-defaults
     command:
       - --web.console.templates=/etc/prometheus/consoles
       - --web.console.libraries=/etc/prometheus/console_libraries
@@ -856,6 +849,7 @@ services:
       resources:
         limits:
           memory: 300M
+    restart: unless-stopped
     ports:
       - "${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"
     logging: *logging
@@ -863,9 +857,8 @@ services:
   # OpenSearch
   opensearch:
     container_name: opensearch
-    <<: *restart-defaults
     build:
-      <<: *build-defaults
+      context: ./
       dockerfile: ${OPENSEARCH_DOCKERFILE}
       cache_from:
         - ${IMAGE_NAME}:${IMAGE_VERSION}-opensearch
@@ -873,6 +866,7 @@ services:
       resources:
         limits:
           memory: 800M
+    restart: unless-stopped
     environment:
       - cluster.name=demo-cluster
       - node.name=demo-node
