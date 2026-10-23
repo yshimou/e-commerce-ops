@@ -1,6 +1,6 @@
 FROM node:20 AS builder
 WORKDIR /src/flagd-ui
-COPY . .
+COPY ./src/flagd-ui .
 RUN npm ci && npm run build
 #-----------------------------------------------------------------------------
 

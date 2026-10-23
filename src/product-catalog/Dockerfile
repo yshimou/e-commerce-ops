@@ -1,6 +1,6 @@
 FROM golang:1.22-alpine AS builder
 WORKDIR /src/product-catalog
-COPY . .
+COPY ./src/product-catalog .
 RUN go mod download && go build -o product-catalog . 
 
 #-----------------------------------------------------------------------------
