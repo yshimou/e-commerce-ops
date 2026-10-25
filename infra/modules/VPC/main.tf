@@ -9,25 +9,27 @@ resource "aws_vpc" "main" {
 
 
 resource "aws_subnet" "private_subnet" {
+  count = length(var.private_subnet_cidrs)
   vpc_id     = aws_vpc.main.id
-  cidr_block = var.private_subnet_cidr
-  availability_zone = var.availability_zone
+  cidr_block = var.private_subnet_cidrs[count.index]
+  availability_zone = var.availability_zones[count.index]
 
   tags = {
-    Name = "Private Subnet"
+    Name = "Private Subnet ${count.index}"
     Project = "e-commerce-ops"
   }
 }
 
 resource "aws_subnet" "public_subnet" {
+  count = length(var.public_subnet_cidrs)
   vpc_id     = aws_vpc.main.id
-  cidr_block = var.public_subnet_cidr
-  availability_zone = var.availability_zone
+  cidr_block = var.public_subnet_cidrs[count.index]
+  availability_zone = var.availability_zones[count.index]
 
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "Public Subnet"
+    Name = "Public Subnet ${count.index}"
     Project = "e-commerce-ops"
   }
 }
@@ -42,19 +44,21 @@ resource "aws_internet_gateway" "igw" {
 }
 
 resource "aws_eip" "eip" {
+  count = length(var.public_subnet_cidrs)
   domain = "vpc"
   tags = {
-    Name = "EIP"
+    Name = "EIP ${count.index}"
     Project = "e-commerce-ops"
   }
 }
 
 resource "aws_nat_gateway" "nat_gw" {
-  allocation_id = aws_eip.eip.id
-  subnet_id     = aws_subnet.public_subnet.id
+  count = length(var.public_subnet_cidrs)
+  allocation_id = aws_eip.eip[count.index].id
+  subnet_id     = aws_subnet.public_subnet[count.index].id
 
   tags = {
-    Name = "NAT-gw"
+    Name = "NAT-gw ${count.index}"
     Project = "e-commerce-ops"
   }
 
@@ -64,15 +68,16 @@ resource "aws_nat_gateway" "nat_gw" {
 }
 
 resource "aws_route_table" "private_RT" {
+  count = length(var.private_subnet_cidrs)
   vpc_id = aws_vpc.main.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat_gw.id
+    nat_gateway_id = aws_nat_gateway.nat_gw[count.index].id
   }
 
   tags = {
-    Name = "private-RT"
+    Name = "private-RT ${count.index}"
     Project = "e-commerce-ops"
   }
 }
@@ -92,12 +97,14 @@ resource "aws_route_table" "public_RT" {
 }
 
 resource "aws_route_table_association" "private_association" {
-  subnet_id      = aws_subnet.private_subnet.id
-  route_table_id = aws_route_table.private_RT.id
+  count = length(var.private_subnet_cidrs)
+  subnet_id      = aws_subnet.private_subnet[count.index].id
+  route_table_id = aws_route_table.private_RT[count.index].id
 }
 
 resource "aws_route_table_association" "public_association" {
-  subnet_id      = aws_subnet.public_subnet.id
+  count = length(var.public_subnet_cidrs)
+  subnet_id      = aws_subnet.public_subnet[count.index].id
   route_table_id = aws_route_table.public_RT.id
 }
 
