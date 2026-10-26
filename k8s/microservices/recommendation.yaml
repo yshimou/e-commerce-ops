@@ -1,0 +1,89 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-ops-demo-recommendationservice
+  labels:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-recommendationservice
+    app.kubernetes.io/instance: ecommerce-ops-demo
+    app.kubernetes.io/component: recommendationservice
+    app.kubernetes.io/name: ecommerce-ops-demo-recommendationservice
+    app.kubernetes.io/version: "1.12.0"
+    app.kubernetes.io/part-of: ecommerce-ops-demo
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      
+      ecommerce-ops.io/name: ecommerce-ops-demo-recommendationservice
+  template:
+    metadata:
+      labels:
+        
+        ecommerce-ops.io/name: ecommerce-ops-demo-recommendationservice
+        app.kubernetes.io/instance: ecommerce-ops-demo
+        app.kubernetes.io/component: recommendationservice
+        app.kubernetes.io/name: ecommerce-ops-demo-recommendationservice
+    spec:
+      serviceAccountName: ecommerce-ops-demo
+      containers:
+        - name: recommendationservice
+          image: 'ghcr.io/open-telemetry/demo:1.12.0-recommendationservice'
+          imagePullPolicy: IfNotPresent
+          ports:
+            
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: 'ecommerce-ops-demo-otelcol'
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+            - name: RECOMMENDATION_SERVICE_PORT
+              value: "8080"
+            - name: PRODUCT_CATALOG_SERVICE_ADDR
+              value: 'ecommerce-ops-demo-productcatalogservice:8080'
+            - name: OTEL_PYTHON_LOG_CORRELATION
+              value: "true"
+            - name: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
+              value: python
+            - name: FLAGD_HOST
+              value: 'ecommerce-ops-demo-flagd'
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.name=$(OTEL_SERVICE_NAME),service.namespace=ecommerce-ops-demo,service.version=1.12.0
+          resources:
+            limits:
+              memory: 500Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-ops-demo-recommendationservice
+  labels:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-recommendationservice
+    app.kubernetes.io/instance: ecommerce-ops-demo
+    app.kubernetes.io/component: recommendationservice
+    app.kubernetes.io/name: ecommerce-ops-demo-recommendationservice
+    app.kubernetes.io/version: "1.12.0"
+    app.kubernetes.io/part-of: ecommerce-ops-demo
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      name: tcp-service
+      targetPort: 8080
+  selector:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-recommendationservice

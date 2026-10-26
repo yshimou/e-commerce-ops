@@ -1,0 +1,97 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-ops-demo-loadgenerator
+  labels:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-loadgenerator
+    app.kubernetes.io/instance: ecommerce-ops-demo
+    app.kubernetes.io/component: loadgenerator
+    app.kubernetes.io/name: ecommerce-ops-demo-loadgenerator
+    app.kubernetes.io/version: "1.12.0"
+    app.kubernetes.io/part-of: ecommerce-ops-demo
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      
+      ecommerce-ops.io/name: ecommerce-ops-demo-loadgenerator
+  template:
+    metadata:
+      labels:
+        
+        ecommerce-ops.io/name: ecommerce-ops-demo-loadgenerator
+        app.kubernetes.io/instance: ecommerce-ops-demo
+        app.kubernetes.io/component: loadgenerator
+        app.kubernetes.io/name: ecommerce-ops-demo-loadgenerator
+    spec:
+      serviceAccountName: ecommerce-ops-demo
+      containers:
+        - name: loadgenerator
+          image: 'ghcr.io/open-telemetry/demo:1.12.0-loadgenerator'
+          imagePullPolicy: IfNotPresent
+          ports:
+            
+            - containerPort: 8089
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: 'ecommerce-ops-demo-otelcol'
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+            - name: LOCUST_WEB_PORT
+              value: "8089"
+            - name: LOCUST_USERS
+              value: "10"
+            - name: LOCUST_SPAWN_RATE
+              value: "1"
+            - name: LOCUST_HOST
+              value: http://ecommerce-ops-demo-frontendproxy:8080
+            - name: LOCUST_HEADLESS
+              value: "false"
+            - name: LOCUST_AUTOSTART
+              value: "true"
+            - name: LOCUST_BROWSER_TRAFFIC_ENABLED
+              value: "true"
+            - name: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION
+              value: python
+            - name: FLAGD_HOST
+              value: 'ecommerce-ops-demo-flagd'
+            - name: FLAGD_PORT
+              value: "8013"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4317
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.name=$(OTEL_SERVICE_NAME),service.namespace=ecommerce-ops-demo,service.version=1.12.0
+          resources:
+            limits:
+              memory: 1500Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-ops-demo-loadgenerator
+  labels:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-loadgenerator
+    app.kubernetes.io/instance: ecommerce-ops-demo
+    app.kubernetes.io/component: loadgenerator
+    app.kubernetes.io/name: ecommerce-ops-demo-loadgenerator
+    app.kubernetes.io/version: "1.12.0"
+    app.kubernetes.io/part-of: ecommerce-ops-demo
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8089
+      name: tcp-service
+      targetPort: 8089
+  selector:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-loadgenerator
