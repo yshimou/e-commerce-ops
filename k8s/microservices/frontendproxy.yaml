@@ -105,7 +105,9 @@ metadata:
     app.kubernetes.io/version: "1.12.0"
     app.kubernetes.io/part-of: ecommerce-ops-demo
 spec:
-  type: ClusterIP
+  # type: ClusterIP
+  type: NodePort
+
   ports:
     - port: 8080
       name: tcp-service
@@ -113,24 +115,3 @@ spec:
   selector:
     
     ecommerce-ops.io/name: ecommerce-ops-demo-frontendproxy
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: frontend-proxy
-  annotations:
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-spec:
-  ingressClassName: alb
-  rules:
-    - host: example.com
-      http:
-        paths:
-          - path: "/"
-            pathType: Prefix
-            backend:
-              service:
-                name: ecommerce-ops-demo-frontendproxy
-                port:
-                  number: 8080
