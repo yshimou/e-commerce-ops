@@ -1,0 +1,78 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-ops-demo-valkey
+  labels:
+    ecommerce-ops.io/name: ecommerce-ops-demo-valkey
+    app.kubernetes.io/instance: ecommerce-ops-demo
+    app.kubernetes.io/component: valkey
+    app.kubernetes.io/name: ecommerce-ops-demo-valkey
+    app.kubernetes.io/version: "1.12.0"
+    app.kubernetes.io/part-of: ecommerce-ops-demo
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      
+      ecommerce-ops.io/name: ecommerce-ops-demo-valkey
+  template:
+    metadata:
+      labels:
+        
+        ecommerce-ops.io/name: ecommerce-ops-demo-valkey
+        app.kubernetes.io/instance: ecommerce-ops-demo
+        app.kubernetes.io/component: valkey
+        app.kubernetes.io/name: ecommerce-ops-demo-valkey
+    spec:
+      serviceAccountName: ecommerce-ops-demo
+      containers:
+        - name: valkey
+          image: 'valkey/valkey:7.2-alpine'
+          imagePullPolicy: IfNotPresent
+          ports:
+            
+            - containerPort: 6379
+              name: valkey
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: 'ecommerce-ops-demo-otelcol'
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.name=$(OTEL_SERVICE_NAME),service.namespace=ecommerce-ops-demo,service.version=1.12.0
+          resources:
+            limits:
+              memory: 20Mi
+          securityContext:
+            runAsGroup: 1000
+            runAsNonRoot: true
+            runAsUser: 999
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-ops-demo-valkey
+  labels:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-valkey
+    app.kubernetes.io/instance: ecommerce-ops-demo
+    app.kubernetes.io/component: valkey
+    app.kubernetes.io/name: ecommerce-ops-demo-valkey
+    app.kubernetes.io/version: "1.12.0"
+    app.kubernetes.io/part-of: ecommerce-ops-demo
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      name: valkey
+      targetPort: 6379
+  selector:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-valkey

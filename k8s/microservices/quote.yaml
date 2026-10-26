@@ -1,0 +1,85 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecommerce-ops-demo-quoteservice
+  labels:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-quoteservice
+    app.kubernetes.io/instance: ecommerce-ops-demo
+    app.kubernetes.io/component: quoteservice
+    app.kubernetes.io/name: ecommerce-ops-demo-quoteservice
+    app.kubernetes.io/version: "1.12.0"
+    app.kubernetes.io/part-of: ecommerce-ops-demo
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      
+      ecommerce-ops.io/name: ecommerce-ops-demo-quoteservice
+  template:
+    metadata:
+      labels:
+        
+        ecommerce-ops.io/name: ecommerce-ops-demo-quoteservice
+        app.kubernetes.io/instance: ecommerce-ops-demo
+        app.kubernetes.io/component: quoteservice
+        app.kubernetes.io/name: ecommerce-ops-demo-quoteservice
+    spec:
+      serviceAccountName: ecommerce-ops-demo
+      containers:
+        - name: quoteservice
+          image: 'ghcr.io/open-telemetry/demo:1.12.0-quoteservice'
+          imagePullPolicy: IfNotPresent
+          ports:
+            
+            - containerPort: 8080
+              name: service
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: OTEL_COLLECTOR_NAME
+              value: 'ecommerce-ops-demo-otelcol'
+            - name: OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
+              value: cumulative
+            - name: QUOTE_SERVICE_PORT
+              value: "8080"
+            - name: OTEL_PHP_AUTOLOAD_ENABLED
+              value: "true"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://$(OTEL_COLLECTOR_NAME):4318
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: service.name=$(OTEL_SERVICE_NAME),service.namespace=ecommerce-ops-demo,service.version=1.12.0
+          resources:
+            limits:
+              memory: 40Mi
+          securityContext:
+            runAsGroup: 33
+            runAsNonRoot: true
+            runAsUser: 33
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecommerce-ops-demo-quoteservice
+  labels:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-quoteservice
+    app.kubernetes.io/instance: ecommerce-ops-demo
+    app.kubernetes.io/component: quoteservice
+    app.kubernetes.io/name: ecommerce-ops-demo-quoteservice
+    app.kubernetes.io/version: "1.12.0"
+    app.kubernetes.io/part-of: ecommerce-ops-demo
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      name: tcp-service
+      targetPort: 8080
+  selector:
+    
+    ecommerce-ops.io/name: ecommerce-ops-demo-quoteservice

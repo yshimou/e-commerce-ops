@@ -1,0 +1,24 @@
+# Local cluster credentials and kubeconfig files
+kubeconfig
+*.kubeconfig
+
+# Local-only settings and secret manifests; commit templates instead
+.env
+.env.*
+!.env.example
+*.local.yaml
+*.local.yml
+secret*.yaml
+secret*.yml
+*.secret.yaml
+*.secret.yml
+
+# Generated Helm dependencies and packaged charts
+charts/
+*.tgz
+
+# Editor and operating-system artifacts
+.DS_Store
+*.swp
+*.swo
+*~
