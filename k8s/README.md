@@ -253,13 +253,54 @@ controller provisions the load balancer:
 kubectl get ingress frontend-proxy --watch
 ```
 
-The current Ingress host is `ecommerce-ops.com`. Replace it in
-`k8s/microservices/frontendproxy-Ingress.yaml` with a domain you control. To
-use the ALB DNS name directly for testing, remove the `host` field from the
-Ingress rule before applying it. Once the Ingress has an address, configure
-your domain's DNS to point to the ALB. HTTPS is not configured in this demo;
-it requires an ACM certificate and corresponding Ingress TLS/certificate
-configuration.
+The Ingress rule currently expects the host `ecommerce-ops.com`. If you own a
+domain, replace that host in `k8s/microservices/frontendproxy-Ingress.yaml` and
+create a DNS record pointing your domain to the ALB. HTTPS is not configured
+in this demo; it requires an ACM certificate and corresponding Ingress
+certificate configuration.
+
+#### Access from Windows without owning a domain
+
+For a temporary test, keep the Ingress host as `ecommerce-ops.com` and add a
+local Windows hosts-file mapping. This lets your own Windows machine send
+requests for that hostname to the public ALB; it does not create public DNS
+for other users.
+
+Get the ALB DNS hostname assigned to the Ingress:
+
+```bash
+kubectl get ingress frontend-proxy \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{"\n"}'
+```
+
+In Windows Command Prompt or PowerShell, resolve that hostname:
+
+```powershell
+nslookup <alb-dns-name>
+```
+
+Use the IPv4 addresses returned by `nslookup` and add a hosts-file line for
+each one. Open Notepad **as Administrator**, then open:
+
+```text
+C:\Windows\System32\drivers\etc\hosts
+```
+
+Add entries using the hostname configured in the Ingress:
+
+```text
+<first-alb-ipv4-address> ecommerce-ops.com
+<second-alb-ipv4-address> ecommerce-ops.com
+<third-alb-ipv4-address> ecommerce-ops.com
+```
+
+Save the file
+
+Open [http://ecommerce-ops.com](http://ecommerce-ops.com) in your browser. Use
+HTTP because this Ingress does not configure TLS. ALB IP addresses can change;
+if access stops working, resolve the ALB DNS name again and update the hosts
+entries. This is a local testing workaround, not a replacement for DNS on a
+domain you control.
 
 ### Clean up the AWS deployment
 

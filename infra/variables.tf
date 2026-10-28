@@ -55,7 +55,7 @@ variable "node_groups" {
   default = {
     general = {
       #instance_types = ["t3.medium"] #uneligible for free tier account
-      instance_types = ["t3.small"]
+      instance_types = ["c7i-flex.large"]
       capacity_type  = "ON_DEMAND"
       scaling_config = {
         desired_size = 2
